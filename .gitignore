@@ -48,3 +48,24 @@ Thumbs.db
 test-setup.js
 vitest.config.ts
 test-setup.ts
+
+# AI/IDE tools
+.agents/
+.claude/
+.windsurf/
+AGENTS.md
+CLAUDE.md
+skills-lock.json
+
+# Docs
+PRD.md
+
+# Build scripts
+build.py
+build2.js
+gen*.py
+
+# Test artifacts (keep test files, remove artifacts)
+test-setup.js
+vitest.config.ts
+test-setup.ts

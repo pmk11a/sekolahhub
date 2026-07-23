@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  GURU
+  ORTU
+}
+
+enum MaterialType {
+  PDF
+  DOC
+  VIDEO
+  LINK
+  OTHER
+}
+
+enum NotificationType {
+  FORUM_REPLY
+  GALLERY_NEW
+  MATERIAL_NEW
+  ANNOUNCEMENT
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String
+  passwordHash  String
+  role          Role      @default(ORTU)
+  schoolId      String?
+  school        School?   @relation("SchoolUsers", fields: [schoolId], references: [id], onDelete: Cascade)
+  classTag      String?   // For ORTU: child's class tag
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  managedSchoolId String?  @unique
+  managedSchool   School?  @relation("SchoolAdmin", fields: [managedSchoolId], references: [id], onDelete: Cascade)
+  galleryItems    GalleryItem[] @relation("GalleryUploader")
+  forumPosts    ForumPost[]
+  materials     LearningMaterial[]
+  notifications Notification[]
+  likedPosts    ForumLike[] @relation("ForumLikes")
+  replies       ForumReply[] @relation("ReplyAuthor")
+
+  @@map("users")
+}
+
+model School {
+  id        String   @id @default(uuid())
+  name      String
+  logoUrl   String?
+  adminId   String?  @unique
+  admin     User?    @relation("SchoolAdmin")
+  users     User[]   @relation("SchoolUsers")
+  createdAt DateTime @default(now())
+
+  @@map("schools")
+}
+
+model GalleryItem {
+  id          String   @id @default(uuid())
+  imageUrl    String
+  caption     String?
+  category    String?  // Kegiatan, Prestasi, Kelas
+  uploadedById String
+  uploadedBy  User     @relation("GalleryUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([uploadedById])
+  @@map("gallery_items")
+}
+
+model ForumPost {
+  id          String         @id @default(uuid())
+  title       String
+  content     String
+  authorId    String
+  author      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  classTag    String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  likes       ForumLike[]
+  replies     ForumReply[]
+
+  @@index([classTag])
+  @@map("forum_posts")
+}
+
+model ForumLike {
+  id       String   @id @default(uuid())
+  postId   String
+  post     ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation("ForumLikes", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@map("forum_likes")
+}
+
+model ForumReply {
+  id       String   @id @default(uuid())
+  content  String
+  postId   String
+  post     ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation("ReplyAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@map("forum_replies")
+}
+
+model LearningMaterial {
+  id         String      @id @default(uuid())
+  title      String
+  fileUrl    String
+  type       MaterialType
+  teacherId  String
+  teacher    User        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject    String
+  classTag   String?
+  createdAt  DateTime    @default(now())
+
+  @@index([teacherId])
+  @@map("learning_materials")
+}
+
+model Notification {
+  id        String          @id @default(uuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  isRead    Boolean         @default(false)
+  link      String?
+  title     String?
+  content   String?
+  createdAt DateTime        @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("announcements")
+}
